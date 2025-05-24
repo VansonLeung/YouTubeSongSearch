@@ -188,7 +188,6 @@
     };
 
     const onPlayerStateChange = (event) => {
-        console.log("onPlayerStateChange", event);
         if (event.data === YT.PlayerState.AD_PLAYING) {
             console.log("An ad is currently playing.");
             setTimeout(() => {
@@ -199,6 +198,11 @@
         } else if (event.data === YT.PlayerState.ENDED) {
             console.log("Video is ended.");
             nextSong();
+        } else if (event.data === -1) {
+            console.log("An ad is currently playing. (-1)");
+            setTimeout(() => {
+                refreshVideo();
+            }, 500);
         }
     };
 
