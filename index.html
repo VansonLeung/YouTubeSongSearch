@@ -142,9 +142,12 @@
                     }
                     currentPlayingVideo = videoId;
 
-                    youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
-                    
-                    onYouTubeIframeAPIReady();
+                    if (youtubePlayer.src === 'https://www.youtube.com/embed/?autoplay=1&enablejsapi=1') {
+                        youtubePlayer.src = `https://www.youtube.com/embed/${currentPlayingVideo}?autoplay=1&enablejsapi=1`;
+                        onYouTubeIframeAPIReady();
+                    } else {
+                        player.loadVideoById(videoId);
+                    }
 
                     fetch(`https://youtube.com/get_video_info?video_id=${videoId}`)
                         .then(response => response.text())
@@ -198,6 +201,7 @@
         if (event.data === YT.PlayerState.AD_PLAYING) {
             console.log("An ad is currently playing.");
             setTimeout(() => {
+                youtubePlayer.src = `https://www.youtube.com/embed/?autoplay=1&enablejsapi=1`;
                 nextSong();
             }, 1000);
         } else if (event.data === YT.PlayerState.PLAYING) {
@@ -208,6 +212,7 @@
         } else if (event.data === -1) {
             console.log("An ad is currently playing. (-1)");
             setTimeout(() => {
+                youtubePlayer.src = `https://www.youtube.com/embed/?autoplay=1&enablejsapi=1`;
                 nextSong();
             }, 1000);
         }
@@ -217,6 +222,7 @@
         console.error('Error occurred: ', event.data);
         // You can implement custom error handling here
         setTimeout(() => {
+            youtubePlayer.src = `https://www.youtube.com/embed/?autoplay=1&enablejsapi=1`;
             nextSong();
         }, 2000); // Wait for 2 seconds before trying the next song
     }
