@@ -188,6 +188,7 @@
     };
 
     const onPlayerStateChange = (event) => {
+        console.log("onPlayerStateChange", event);
         if (event.data === YT.PlayerState.AD_PLAYING) {
             console.log("An ad is currently playing.");
             setTimeout(() => {
