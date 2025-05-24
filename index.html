@@ -146,7 +146,12 @@
                         youtubePlayer.src = `https://www.youtube.com/embed/${currentPlayingVideo}?autoplay=1&enablejsapi=1`;
                         onYouTubeIframeAPIReady();
                     } else {
-                        player.loadVideoById(videoId);
+                        try {
+                            player.loadVideoById(videoId);
+                        } catch (error) {
+                            youtubePlayer.src = `https://www.youtube.com/embed/${currentPlayingVideo}?autoplay=1&enablejsapi=1`;
+                            onYouTubeIframeAPIReady();
+                        }
                     }
 
                     fetch(`https://youtube.com/get_video_info?video_id=${videoId}`)
