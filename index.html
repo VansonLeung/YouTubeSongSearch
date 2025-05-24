@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Song Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #121212; /* Dark background */
+            color: #ffffff; /* Light text color */
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            background-color: #1e1e1e; /* Dark textarea */
+            color: #ffffff; /* Light text color */
+            border: 1px solid #444; /* Border color */
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #player {
+            width: 100%;
+            height: 315px;
+            margin-top: 20px;
+        }
+        h1 {
+            color: #ffffff; /* Light header color */
+        }
+        alert {
+            background-color: #ff4444; /* Alert background */
+            color: #ffffff; /* Alert text color */
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            background-color: #444; /* Button background */
+            color: #ffffff; /* Button text color */
+            border: none;
+            padding: 10px 15px;
+            margin-right: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #666; /* Button hover effect */
+        }
+    </style>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<body>
+
+<textarea id="songInput" placeholder="Enter song titles, one per line..."></textarea>
+
+<div class="controls">
+    <button id="prevButton"> ⏮︎ </button>
+    <button id="playButton"> ⏵︎ </button>
+    <button id="stopButton"> ⏹︎ </button>
+    <button id="nextButton"> ⏭︎ </button>
+    <button id="shuffleButton"> 🔀 </button>
+</div>
+
+<iframe id="youtubePlayer" src="https://www.youtube.com/embed/?autoplay=1&enablejsapi=1" allow="autoplay" frameborder="0"></iframe>
+
+<script>
+    
+    const textarea = document.getElementById('songInput');
+    const playButton = document.getElementById('playButton');
+    const stopButton = document.getElementById('stopButton');
+    const prevButton = document.getElementById('prevButton');
+    const nextButton = document.getElementById('nextButton');
+    const shuffleButton = document.getElementById('shuffleButton');
+
+    const youtubePlayer = document.getElementById('youtubePlayer');
+    let debounceTimer;
+    let lines = [];
+    let player;
+    let currentPlayingVideo = null;
+    let isShuffleEnabled = false;
+
+
+    const currentLineManager = {
+        _currentLine: localStorage.getItem('currentLine') ? parseInt(localStorage.getItem('currentLine')) : 0,
+        get currentLine() {
+            return this._currentLine;
+        },
+        set currentLine(line) {
+            if (line >= 0 && line < lines.length) {
+                this._currentLine = line;
+                localStorage.setItem('currentLine', line);
+                loadVideo(lines[this._currentLine]);
+            }
+        }
+    };
+
+
+    textarea.addEventListener('input', (e) => {
+        localStorage.setItem('songInput', e.target.value);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            lines = textarea.value.split('\n').map(line => line.trim()).filter(line => line);
+            if (lines.length > 0) {
+                if (currentLineManager.currentLine < lines.length) {
+                    loadVideo(lines[currentLineManager.currentLine]);
+                } else {
+                    currentLineManager.currentLine = 0;
+                    loadVideo(lines[currentLineManager.currentLine]);
+                }
+            }
+        }, 1000); // Debounce time set to 1000ms
+    });
+
+    textarea.value = localStorage.getItem('songInput') || '';
+    lines = textarea.value.split('\n').map(line => line.trim()).filter(line => line);
+
+    function loadVideo(query) {
+        const apiKey = 'AIzaSyBINMC03xf8qL5lLG9ca2tXqyNEwf6mSMM'; // Replace with your YouTube Data API key
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`;
+
+        fetchOrCache(url)
+            .then(data => {
+                if (data.items.length > 0) {
+                    const videoId = data.items[0].id.videoId;
+
+                    if (currentPlayingVideo && currentPlayingVideo === videoId) {
+                        return; // If the same video is already playing, do nothing
+                    }
+                    currentPlayingVideo = videoId;
+
+                    youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+                    onYouTubeIframeAPIReady();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching YouTube data:', error);
+                setTimeout(() => {
+                    nextSong();
+                }, 2000);
+            });
+    }
+
+    const fetchOrCache = async (url) => {
+        if (localStorage.getItem(url)) {
+            return Promise.resolve(JSON.parse(localStorage.getItem(url)));
+        }
+        return fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                localStorage.setItem(url, JSON.stringify(data));
+                return data;
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                throw error;
+            })
+    }
+
+    // YouTube Player API to detect when the video ends
+    const onYouTubeIframeAPIReady = () => {
+        player = new YT.Player('youtubePlayer', {
+            events: {
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError,
+            }
+        });
+    };
+
+    const onPlayerStateChange = (event) => {
+        if (event.data === YT.PlayerState.ENDED) {
+            nextSong();
+        }
+    };
+
+    const onPlayerError = (event) => {
+        console.error('Error occurred: ', event.data);
+        // You can implement custom error handling here
+        setTimeout(() => {
+            nextSong();
+        }, 2000); // Wait for 2 seconds before trying the next song
+    }
+
+    nextSong = () => {
+        if (isShuffleEnabled) {
+            nextRandomSong();
+            return;
+        }
+
+        currentLineManager.currentLine++;
+        if (currentLineManager.currentLine < lines.length) {
+            loadVideo(lines[currentLineManager.currentLine]);
+        } else {
+            currentLineManager.currentLine = 0; // Reset to the first song
+            loadVideo(lines[currentLineManager.currentLine]);
+        }
+    };
+
+
+    nextRandomSong = () => {
+        if (lines.length > 0) {
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * lines.length);
+            } while (randomIndex === currentLineManager.currentLine); // Ensure it's not the same song
+            currentLineManager.currentLine = randomIndex; // Use setter to update line
+            loadVideo(lines[currentLineManager.currentLine]);
+        }
+    }
+
+
+    setTimeout(() => {
+        onYouTubeIframeAPIReady();
+    }, 1000);
+
+
+
+
+
+
+
+    // Control button event listeners
+    playButton.addEventListener('click', () => {
+        if (lines.length > 0) {
+            loadVideo(lines[currentLineManager.currentLine]);
+        }
+    });
+
+    stopButton.addEventListener('click', () => {
+        player.stopVideo();
+    });
+
+    prevButton.addEventListener('click', () => {
+        if (isShuffleEnabled) {
+            nextRandomSong();
+            return;
+        }
+        if (currentLineManager.currentLine > 0) {
+            currentLineManager.currentLine--;
+            loadVideo(lines[currentLineManager.currentLine]);
+        } else {
+            currentLineManager.currentLine = lines.length - 1;
+            loadVideo(lines[currentLineManager.currentLine]);
+        }
+    });
+
+    nextButton.addEventListener('click', () => {
+        if (isShuffleEnabled) {
+            nextRandomSong();
+            return;
+        }
+        if (currentLineManager.currentLine < lines.length - 1) {
+            currentLineManager.currentLine++;
+            loadVideo(lines[currentLineManager.currentLine]);
+        } else {
+            currentLineManager.currentLine = 0;
+            loadVideo(lines[currentLineManager.currentLine]);
+        }
+    });
+
+    shuffleButton.addEventListener('click', () => {
+        isShuffleEnabled = !isShuffleEnabled;
+        shuffleButton.textContent = isShuffleEnabled ? '🔀 (On)' : '🔀 (Off)';
+    });
+
+</script>
+
+</body>
+</html>
