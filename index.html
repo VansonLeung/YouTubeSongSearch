@@ -198,8 +198,8 @@
         if (event.data === YT.PlayerState.AD_PLAYING) {
             console.log("An ad is currently playing.");
             setTimeout(() => {
-                refreshVideo();
-            }, 500);
+                nextSong();
+            }, 1000);
         } else if (event.data === YT.PlayerState.PLAYING) {
             console.log("Video is playing.");
         } else if (event.data === YT.PlayerState.ENDED) {
@@ -208,8 +208,8 @@
         } else if (event.data === -1) {
             console.log("An ad is currently playing. (-1)");
             setTimeout(() => {
-                refreshVideo();
-            }, 500);
+                nextSong();
+            }, 1000);
         }
     };
 
