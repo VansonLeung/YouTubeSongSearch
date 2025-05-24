@@ -154,11 +154,12 @@
                         }
                     }
 
-                    if (player && player.v && player.ad) {
-                        setTimeout(() => {
+                    setTimeout(() => {
+                        if (player && player.v && player.ad) {
+                            youtubePlayer.src = `https://www.youtube.com/embed/?autoplay=1&enablejsapi=1`;
                             nextSong();
-                        }, 500); // Wait for 1 second before playing the video
-                    }
+                        } // Wait for 1 second before playing the video
+                    }, 500);
                 }
             })
             .catch(error => {
