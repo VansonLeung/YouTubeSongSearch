@@ -127,6 +127,7 @@
     textarea.value = localStorage.getItem('songInput') || '';
     lines = textarea.value.split('\n').map(line => line.trim()).filter(line => line);
 
+
     function loadVideo(query) {
         const apiKey = 'AIzaSyBINMC03xf8qL5lLG9ca2tXqyNEwf6mSMM'; // Replace with your YouTube Data API key
         const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`;
@@ -151,6 +152,13 @@
                     nextSong();
                 }, 2000);
             });
+    }
+
+    function refreshVideo() {
+        if (currentPlayingVideo) {
+            youtubePlayer.src = `https://www.youtube.com/embed/${currentPlayingVideo}?autoplay=1&enablejsapi=1`;
+            onYouTubeIframeAPIReady();
+        }
     }
 
     const fetchOrCache = async (url) => {
@@ -180,7 +188,15 @@
     };
 
     const onPlayerStateChange = (event) => {
-        if (event.data === YT.PlayerState.ENDED) {
+        if (event.data === YT.PlayerState.AD_PLAYING) {
+            console.log("An ad is currently playing.");
+            setTimeout(() => {
+                refreshVideo();
+            }, 500);
+        } else if (event.data === YT.PlayerState.PLAYING) {
+            console.log("Video is playing.");
+        } else if (event.data === YT.PlayerState.ENDED) {
+            console.log("Video is ended.");
             nextSong();
         }
     };
