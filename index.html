@@ -128,8 +128,8 @@
     lines = textarea.value.split('\n').map(line => line.trim()).filter(line => line);
 
 
-    function loadVideo(query) {
-        const apiKey = 'AIzaSyD0Qf-GhhOXmTiyfm-F3sj1eFvRkt2grNY'; // Replace with your YouTube Data API key
+    function loadVideo(query, isForced = false) {
+        const apiKey = 'AIzaSyBL-mOjKg0iFNknwnWG_oUe_AbzKEMDpNs'; // Replace with your YouTube Data API key
         const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`;
 
         fetchOrCache(url)
@@ -137,10 +137,12 @@
                 if (data.items.length > 0) {
                     const videoId = data.items[0].id.videoId;
 
-                    if (currentPlayingVideo && currentPlayingVideo === videoId) {
+                    if (!isForced && currentPlayingVideo && currentPlayingVideo === videoId) {
+console.log("CASE A")
                         return; // If the same video is already playing, do nothing
                     }
                     currentPlayingVideo = videoId;
+console.log("CASE B")
 
                     if (youtubePlayer.src === 'https://www.youtube.com/embed/?autoplay=1&enablejsapi=1') {
                         youtubePlayer.src = `https://www.youtube.com/embed/${currentPlayingVideo}?autoplay=1&enablejsapi=1`;
@@ -153,13 +155,6 @@
                             onYouTubeIframeAPIReady();
                         }
                     }
-
-                    setTimeout(() => {
-                        if (player && player.v && player.ad) {
-                            youtubePlayer.src = `https://www.youtube.com/embed/?autoplay=1&enablejsapi=1`;
-                            nextSong();
-                        } // Wait for 1 second before playing the video
-                    }, 500);
                 }
             })
             .catch(error => {
@@ -167,10 +162,23 @@
             });
     }
 
+
+    setInterval(() => {  
+        console.log("v", player.v)
+        /*
+        if (player && player.v && player.v.ad) {
+            console.log("SHOULD NEXT SONG!", JSON.stringify(player.v.ad, true, 2), JSON.stringify(player.v.remote, true, 2));
+            youtubePlayer.src = `https://www.youtube.com/embed/?autoplay=1&enablejsapi=1`;
+            nextSong();
+        } // Wait for 1 second before playing the video
+         */
+    }, 2000);
+
+
     function refreshVideo() {
         if (currentPlayingVideo) {
-            youtubePlayer.src = `https://www.youtube.com/embed/${currentPlayingVideo}?autoplay=1&enablejsapi=1`;
-            onYouTubeIframeAPIReady();
+            youtubePlayer.src === 'https://www.youtube.com/embed/?autoplay=1&enablejsapi=1'
+            loadVideo(currentPlayingVideo, true);
         }
     }
 
